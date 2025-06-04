@@ -17,3 +17,12 @@ COPY rules /rules
 
 WORKDIR /target
 ENTRYPOINT ["/entrypoint.sh"]
+
+# Install JavaScript tools
+RUN npm install -g @npmcli/arborist eslint eslint-plugin-security
+
+# Install Gitleaks (secrets scanning)
+RUN curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh
+
+# Copy JS rules
+COPY rules/javascript /rules/javascript

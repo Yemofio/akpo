@@ -1,0 +1,18 @@
+rules:
+  - id: "js-hardcoded-jwt"
+    pattern: "jwt.sign(..., 'hardcoded-secret')"
+    message: "Hardcoded JWT secret detected"
+    severity: "ERROR"
+    languages: [javascript]
+  
+  - id: "js-eval-usage"
+    pattern: "eval(...)"
+    message: "Unsafe eval() usage"
+    severity: "WARNING"
+    languages: [javascript]
+  
+  - id: "js-non-https-url"
+    pattern-regex: 'http:\/\/[^\s''\'']+'
+    message: "Insecure HTTP URL detected"
+    severity: "WARNING"
+    languages: [javascript]
