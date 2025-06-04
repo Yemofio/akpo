@@ -1,65 +1,59 @@
 #!/bin/bash
 
+# Initialize tool options
+SEMGREP_OPTIONS="--json"
+BANDIT_OPTIONS="-f json"
+NPM_AUDIT_OPTIONS="--json"
+GITLEAKS_OPTIONS="--redact"
+
+# Enable strict mode if requested
+if [[ "$*" == *"--strict"* ]]; then
+    echo "🛡️ Running in STRICT mode (will fail on warnings)"
+    SEMGREP_OPTIONS+=" --error"
+    BANDIT_OPTIONS="-lll"  # Show low+ severity findings
+    NPM_AUDIT_OPTIONS+=" --audit-level=moderate"
+    GITLEAKS_OPTIONS+=" --exit-code=1"
+fi
+
 run_scan() {
     echo "🔍 Running Python Security Scan..."
-    
-    # Semgrep with custom rules
-    semgrep --config=/rules/python/security.yml --json -o /results/semgrep.json
-    
-    # Bandit (general Python SAST)
-    bandit -r . -f json -o /results/bandit.json
-    
-    # Safety (dependency checks)
+    semgrep scan --config=/rules/python/security.yml $SEMGREP_OPTIONS -o /results/semgrep.json
+    bandit -r . $BANDIT_OPTIONS -o /results/bandit.json
     safety check --json > /results/safety.json
-    
-    echo "✅ Scan completed!"
 }
 
 run_js_scan() {
     echo "🔍 Running JavaScript Security Scan..."
-
-    # Check if .akpo-results directory exists
-    if [ ! -d ".akpo-results" ]; then
-        mkdir .akpo-results
-    fi
-
-
-    # ESLint with security rules
-    echo "🔎 Running ESLint..."
-    npx eslint . --ext .js,.jsx,.ts --format json --output-file .akpo-results/eslint.json
-    echo "✅ ESLint completed! $?"
-
-     # Check if eslint.json file was created
-    if [ ! -f ".akpo-results/eslint.json" ]; then
-        echo "Error: eslint.json file was not created"
-    fi
-
-    # npm audit (dependency checks)
+    eslint --no-eslintrc --rule 'security/detect-object-injection: error' \
+           -f json -o /results/eslint.json .
     if [ -f "package.json" ]; then
-        echo "🔎 Running npm audit..."
-        npm audit --json > .akpo-results/npm-audit.json
-        echo "✅ npm audit completed! $?"
+        npm audit $NPM_AUDIT_OPTIONS > /results/npm-audit.json
     fi
-    
-    # Gitleaks (secrets)
-    echo "🔎 Running Gitleaks..."
-    gitleaks detect --source=. --report-path=.akpo-results/gitleaks.json
-    echo "✅ Gitleaks completed! $?"
+    gitleaks detect --source=. $GITLEAKS_OPTIONS --report-path=/results/gitleaks.json
 }
 
 case "$1" in
     scan)
+        shift  # Remove 'scan' from arguments
         if [ -f "package.json" ]; then
-            run_js_scan
+            run_js_scan "$@"
         elif [ -f "requirements.txt" ]; then
-            run_scan
+            run_python_scan "$@"
         else
-            run_js_scan
             echo "⚠️ No supported project type detected"
-            echo "📊 Results saved to /results"
-            # touch /results/eslint.json
-            # exit 0
+            exit 1
         fi
         ;;
-    *) echo "Usage: $0 [scan]"; exit 1 ;;
+    *)
+        echo "Usage: $0 scan [--strict]"
+        exit 1
+        ;;
 esac
+
+# Propagate failure in strict mode
+if [[ "$*" == *"--strict"* ]] && [ -f "/results/gitleaks.json" ]; then
+    if jq -e '.findings | length > 0' /results/gitleaks.json >/dev/null; then
+        echo "❌ Gitleaks found secrets - failing strict mode!"
+        exit 1
+    fi
+fi

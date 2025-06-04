@@ -1,17 +1,35 @@
 #!/bin/bash
 
+STRICT_MODE=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --strict)
+      STRICT_MODE=true
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+
 # Default to current directory if none specified
 TARGET_DIR="$(readlink -f "${1:-$(pwd)}")"
 RESULTS_DIR="${TARGET_DIR}/akpo-results"
 mkdir -p "$RESULTS_DIR"
 
-if docker run --rm \
-  -v "${TARGET_DIR}:/target" \
-  -v "${RESULTS_DIR}:/results" \
-  ghcr.io/yemofio/akpo:latest \
-  scan; then
-  echo "📊 Results saved to ${RESULTS_DIR}"
-else
-  echo "Error running Docker container"
-fi
-
+# if docker run --rm \
+#   -v "${TARGET_DIR}:/target" \
+#   -v "${RESULTS_DIR}:/results" \
+#   ghcr.io/yemofio/akpo:latest \
+#   scan; then
+#   echo "📊 Results saved to ${RESULTS_DIR}"
+# else
+#   echo "Error running Docker container"
+# fi
+docker run --rm \
+  -v "$(pwd):/target" \
+  -v "$(pwd)/.akpo-results:/results" \
+  ghcr.io/$GITHUB_REPOSITORY_OWNER/akpo:latest \
+  scan ${STRICT_MODE:+--strict}
