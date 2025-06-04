@@ -1,14 +1,17 @@
 #!/bin/bash
 
 # Default to current directory if none specified
-TARGET_DIR="${1:-$(pwd)}"
-RESULTS_DIR="${TARGET_DIR}/.akpo-results"
+TARGET_DIR="$(readlink -f "${1:-$(pwd)}")"
+RESULTS_DIR="${TARGET_DIR}/akpo-results"
 mkdir -p "$RESULTS_DIR"
 
-docker run --rm \
+if docker run --rm \
   -v "${TARGET_DIR}:/target" \
   -v "${RESULTS_DIR}:/results" \
-  ghcr.io/$GITHUB_REPOSITORY_OWNER/akpo:latest \
-  scan
+  ghcr.io/yemofio/akpo:latest \
+  scan; then
+  echo "📊 Results saved to ${RESULTS_DIR}"
+else
+  echo "Error running Docker container"
+fi
 
-echo "📊 Results saved to ${RESULTS_DIR}"
