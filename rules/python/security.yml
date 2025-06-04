@@ -1,0 +1,15 @@
+rules:
+  - id: "python-flask-hardcoded-secret"
+    pattern: "app.config['SECRET_KEY'] = '...'"
+    message: "Hardcoded Flask secret key detected"
+    severity: "ERROR"
+    languages: [python]
+    metadata:
+      cwe: "CWE-798"
+      fix: "Use environment variables instead"
+
+  - id: "python-sql-string-formatting"
+    pattern: "cursor.execute(f'SELECT ... FROM {table}')"
+    message: "SQL query with string formatting (risk of injection)"
+    severity: "WARNING"
+    languages: [python]

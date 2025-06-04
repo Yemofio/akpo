@@ -1,7 +1,19 @@
 FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y python3-pip npm curl
-RUN pip install semgrep bandit && npm install -g @npmcli/arborist
-COPY bin/akpo /akpo
-RUN chmod +x /akpo
-ENTRYPOINT ["/akpo"]
-ENV PATH=$PATH:/akpo
+
+# Install core tools
+RUN apt-get update && apt-get install -y \
+    python3-pip npm curl jq git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python scanners
+RUN pip install semgrep bandit safety
+
+# Install entrypoint
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Copy rules
+COPY rules /rules
+
+WORKDIR /target
+ENTRYPOINT ["/entrypoint.sh"]

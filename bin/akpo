@@ -1,4 +1,14 @@
 #!/bin/bash
-IMAGE_REFERENCE=$(docker pull ghcr.io/yemofio/akpo:latest | grep -o "ghcr.io/yemofio/akpo:latest")
 
-docker run -it $IMAGE_REFERENCE akpo "$@"
+# Default to current directory if none specified
+TARGET_DIR="${1:-$(pwd)}"
+RESULTS_DIR="${TARGET_DIR}/.akpo-results"
+mkdir -p "$RESULTS_DIR"
+
+docker run --rm \
+  -v "${TARGET_DIR}:/target" \
+  -v "${RESULTS_DIR}:/results" \
+  ghcr.io/$GITHUB_REPOSITORY_OWNER/akpo:latest \
+  scan
+
+echo "📊 Results saved to ${RESULTS_DIR}"
