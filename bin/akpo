@@ -1,9 +1,4 @@
 #!/bin/bash
-DOCKER_IMAGE="ghcr.io/$GITHUB_REPOSITORY_OWNER/akpo:latest"
+IMAGE_REFERENCE=$(docker pull ghcr.io/yemofio/akpo:latest | grep -o "ghcr.io/yemofio/akpo:latest")
 
-if ! docker inspect $DOCKER_IMAGE &>/dev/null; then
-  echo "Downloading Akpo scanner image..."
-  docker pull $DOCKER_IMAGE || { echo "❌ Image pull failed"; exit 1; }
-fi
-
-docker run --rm -v "$(pwd):/target" $DOCKER_IMAGE "$@"
+docker run -it $IMAGE_REFERENCE akpo "$@"
