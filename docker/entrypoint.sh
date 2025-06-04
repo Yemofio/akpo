@@ -26,9 +26,7 @@ run_js_scan() {
 
     # ESLint with security rules
     echo "🔎 Running ESLint..."
-    eslint --no-eslintrc --rule 'security/detect-object-injection: error' \
-           --rule 'security/detect-eval-with-expression: error' \
-           -f json -o .akpo-results/eslint.json /target
+    npx eslint . --ext .js,.jsx,.ts --format json --output-file .akpo-results/eslint.json
     echo "✅ ESLint completed! $?"
 
      # Check if eslint.json file was created
@@ -37,7 +35,7 @@ run_js_scan() {
     fi
 
     # npm audit (dependency checks)
-    if [ -f "/target/package.json" ]; then
+    if [ -f "package.json" ]; then
         echo "🔎 Running npm audit..."
         npm audit --json > .akpo-results/npm-audit.json
         echo "✅ npm audit completed! $?"
@@ -45,15 +43,15 @@ run_js_scan() {
     
     # Gitleaks (secrets)
     echo "🔎 Running Gitleaks..."
-    gitleaks detect --source=/target --report-path=.akpo-results/gitleaks.json
+    gitleaks detect --source=. --report-path=.akpo-results/gitleaks.json
     echo "✅ Gitleaks completed! $?"
 }
 
 case "$1" in
     scan)
-        if [ -f "/target/package.json" ]; then
+        if [ -f "package.json" ]; then
             run_js_scan
-        elif [ -f "/target/requirements.txt" ]; then
+        elif [ -f "requirements.txt" ]; then
             run_scan
         else
             run_js_scan
@@ -65,4 +63,3 @@ case "$1" in
         ;;
     *) echo "Usage: $0 [scan]"; exit 1 ;;
 esac
-
