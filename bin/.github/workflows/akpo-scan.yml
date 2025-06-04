@@ -1,0 +1,30 @@
+name: Akpo Security Scan
+on: 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install Akpo
+        run: |
+          curl -sSL https://raw.githubusercontent.com/${{ github.repository_owner }}/akpo/main/install.sh | bash
+          
+      - name: Run Security Scan
+        run: akpo scan --strict
+        
+      - name: Upload Results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: .akpo-results/*.sarif
+          
+      - name: Fail on Critical Issues
+        if: ${{ failure() }}
+        run: |
+          echo "❌ Critical security issues found! Check the Security tab."
+          exit 1
